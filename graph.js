@@ -60,14 +60,17 @@ class Graph {
 			.enter().append("g")
 			.on("click", function(d) {
 				that.selectNode(d, this);
+				// that.hideLinks();
 				if (that.firstSelectedNode && that.lastSelectedNode) {
 					// if (!this.graphMap) {
-						this.graphMap = new GraphMap(that.rawInput.nodes, that.rawInput.links, that.firstSelectedNode, that.lastSelectedNode);
+						that.graphMap = new GraphMap(that.rawInput.nodes, that.rawInput.links, that.firstSelectedNode, that.lastSelectedNode);
 					// } else {
 						// this.graphMap.updateStartEndNodes(that.firstSelectedNode, that.lastSelectedNode);
 					// }
-					this.graphMap.findPaths();
+					that.graphMap.findPaths();
+					that.showLinks(that.graphMap.getFoundPaths());
 				}
+
 			});
 
 		this.circles = this.nodes.append("circle")
@@ -105,6 +108,15 @@ class Graph {
 		if (!d3.event.active) this.simulation.alphaTarget(0);
 		d.fx = null;
 		d.fy = null;
+	}
+
+	showLinks(foundPaths) {
+		foundPaths.forEach((foundPath) => {
+			for (var i = 0; i < foundPath.length - 1; i++) {
+				var id = "#n" + foundPath[i+1] + "-n" + foundPath[i];
+				this.svg.select(id).classed("selected", true); 
+			}
+		})
 	}
 
 	selectNode(d, node) {
@@ -289,5 +301,9 @@ class GraphMap {
 		var newPath = this.nodePaths[this.currentNode.id].slice();
 		newPath.push(linkedNodeId);
 		this.nodePaths[linkedNodeId] = newPath;
+	}
+
+	getFoundPaths() {
+		return this.foundPaths;
 	}
 }
