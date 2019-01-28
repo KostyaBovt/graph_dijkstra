@@ -1,3 +1,5 @@
+const MAX_PATHS = 10;
+
 class Graph {
 	constructor(file) {
 		d3.json(file, (error, input) => {
@@ -48,7 +50,7 @@ class Graph {
 			.data(this.input.links)
 			.enter().append("line")
 			.attr("stroke-width", function(d) { return Math.sqrt(d.value); })
-			.attr("id", function(d) { return "n" + d.source + "-n" + d.target; })
+			.attr("id", function(d) { return "n" + Math.min(d.source, d.target) + "-n" + Math.max(d.source, d.target); })
 	}
 
 	initNodes() {
@@ -58,15 +60,17 @@ class Graph {
 			.selectAll("g")
 			.data(this.input.nodes)
 			.enter().append("g")
+			.attr("id", (d) => "n" + d.id)
 			.on("click", function(d) {
 				that.selectNode(d, this);
-				// that.hideLinks();
-				if (that.firstSelectedNode && that.lastSelectedNode) {
-					// if (!this.graphMap) {
-						that.graphMap = new GraphMap(that.rawInput.nodes, that.rawInput.links, that.firstSelectedNode, that.lastSelectedNode);
-					// } else {
-						// this.graphMap.updateStartEndNodes(that.firstSelectedNode, that.lastSelectedNode);
-					// }
+				that.hideLinks();
+				if (that.firstSelectedNode !== null && that.lastSelectedNode !== null) {
+					that.graphMap = new GraphMap(
+						that.rawInput.nodes,
+						that.rawInput.links,
+						that.firstSelectedNode,
+						that.lastSelectedNode
+					);
 					that.graphMap.findPaths();
 					that.showLinks(that.graphMap.getFoundPaths());
 				}
@@ -110,23 +114,60 @@ class Graph {
 		d.fy = null;
 	}
 
+	generateSelectorArray() {
+		var arr = [];
+		for (var i = 1; i <= MAX_PATHS; i++) {
+			arr.push(i);
+		}
+		if (MAX_PATHS > 5) {
+			arr.push('n');
+		}
+		return arr;
+	}
+
 	showLinks(foundPaths) {
-		foundPaths.forEach((foundPath) => {
+		foundPaths.forEach((foundPath, num) => {
 			for (var i = 0; i < foundPath.length - 1; i++) {
-				var id = "#n" + foundPath[i+1] + "-n" + foundPath[i];
-				this.svg.select(id).classed("selected", true); 
+				// color links
+				var min = Math.min(foundPath[i], foundPath[i + 1]);
+				var max = Math.max(foundPath[i], foundPath[i + 1]);
+				var id = "#n" + min + "-n" + max;
+				var sclass = "selected-" + ((num >= 5) ? "n" : (num + 1));
+				this.svg.select(id).classed(sclass, true);
+
+				//color nodes
+				if (i) {
+					var id = "#n" + foundPath[i];
+					var sclass = "selected-" + ((num >= 5) ? "n" : (num + 1));
+					this.svg.select(id).classed(sclass, true);
+				}
 			}
 		})
 	}
 
+	hideLinks() {
+		var selectorArray = this.generateSelectorArray();
+		// uncolor links
+		selectorArray.forEach((selector) => {
+			var sclass = "selected-" + selector;
+			this.svg.selectAll("line." + sclass).classed(sclass, false);		
+		})
+
+		// uncolor nodes
+		selectorArray.forEach((selector) => {
+			var sclass = "selected-" + selector;
+			this.svg.selectAll(".nodes ." + sclass).classed(sclass, false);
+		})
+	}
+
 	selectNode(d, node) {
-		if (d3.select(node).classed("selected-2")) {
+		if (d3.select(node).classed("end-node")) {
 			return;
 		}
 
-		d3.selectAll(".nodes .selected-1").classed("selected-1", false);
-		d3.selectAll(".nodes .selected-2").classed("selected-2", false).classed("selected-1", true);
-		d3.select(node).classed("selected-2", true);
+		d3.selectAll(".nodes .start-node").classed("start-node", false);
+		d3.selectAll(".nodes .end-node").classed("end-node", false).classed("start-node", true);
+		d3.select(node).classed("end-node", true);
 
 		this.firstSelectedNode = this.lastSelectedNode;
 		this.lastSelectedNode = d.id;
@@ -220,7 +261,7 @@ class GraphMap {
 	}
 
 	findPaths() {
-		while (!this.stopFindPaths && this.foundPaths.length < 5) {
+		while (!this.stopFindPaths && this.foundPaths.length < MAX_PATHS) {
 			this.findPath();
 		}
 		console.log(this.foundPaths);
@@ -260,7 +301,7 @@ class GraphMap {
 			if ((this.currentNode.id == this.startNode.id) && (this.nodes[key]["id"] == this.endNote.id)) {
 				if (this.directPathAdded) {
 					continue;
-;				}
+				}
 			}
 			this.updateNodeDistance(key);
 		}
