@@ -8,7 +8,7 @@ class Graph {
 			this.initLinks();
 			this.initNodes();
 			this.initSimulation();
-			this.graphMap = null;
+			this.pathFinder = null;
 		});
 
 	}
@@ -63,14 +63,14 @@ class Graph {
 				that.selectNode(d, this);
 				that.hideLinks();
 				if (that.firstSelectedNode !== null && that.lastSelectedNode !== null) {
-					that.graphMap = new GraphMap(
+					that.pathFinder = new PathFinder(
 						that.rawInput.nodes,
 						that.rawInput.links,
 						that.firstSelectedNode,
 						that.lastSelectedNode
 					);
-					that.graphMap.findPaths();
-					that.showLinks(that.graphMap.getFoundPaths());
+					that.pathFinder.findPaths();
+					that.showLinks(that.pathFinder.getFoundPaths());
 				}
 
 			});
@@ -203,7 +203,7 @@ class Graph {
 }
 
 
-class GraphMap {
+class PathFinder {
 	constructor(nodes, links, startId, endId) {
 		this.initNodes = nodes;
 		this.initLinks = links;
