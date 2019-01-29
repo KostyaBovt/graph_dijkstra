@@ -1,5 +1,3 @@
-const MAX_PATHS = 10;
-
 class Graph {
 	constructor(file) {
 		d3.json(file, (error, input) => {
