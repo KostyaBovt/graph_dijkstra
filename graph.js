@@ -9,7 +9,106 @@ class Graph {
 			this.initNodes();
 			this.initSimulation();
 			this.pathFinder = null;
+
+
+			// setTimeout(() => {
+			// 	this.deleteNode(30);
+			// }, 4000)
+			// setTimeout(() => {
+			// 	this.deleteLink(1);
+			// }, 4000)
+			// console.log(this.input);
+			// console.log(this.rawInput);
+			console.log(this.nodes);
+			console.log(this.links);
 		});
+
+	}
+
+	updateLinks() {
+		var l = d3.selectAll(".links line")
+			.data(this.input.links, (d) => d.id);
+
+		l.exit().remove();
+	}
+
+	updateNodes() {
+		var n = d3.selectAll(".nodes g")
+			.data(this.input.nodes, (d) => d.id)
+
+		n.exit().remove();
+			
+	}
+
+	deleteNode(id) {
+		
+		var nodeArrays = [this.rawInput.nodes, this.input.nodes]; 
+
+		nodeArrays.forEach((nodeArray) => {
+			var index = nodeArray.map((e)=>{return e.id}).indexOf(id);
+			if (index != -1)
+			{
+				nodeArray.splice(index, 1);
+			}
+		})
+		this.deleteNodeLinks(id);
+		this.updateNodes();
+		this.updateLinks();
+		this.initSimulation();
+
+	}
+
+	deleteNodeLinks(id) {
+		var linkArrays = [
+			{
+				array: this.rawInput.links,
+				getSourceId: function(e) { return e.source; },
+				getTargetId: function(e) { return e.target;	}
+			},
+			{
+				array: this.input.links,
+				getSourceId: function(e) { return e.source.id; },
+				getTargetId: function(e) { return e.target.id; }
+			}
+		]
+
+
+		linkArrays.forEach((linkArray) => {
+			var indexes = [];
+
+			var index = linkArray.array.map((e) => {return linkArray.getTargetId(e)}).indexOf(id);
+			while (index != -1) {
+				indexes.push(index);
+				index = linkArray.array.map((e) => {return linkArray.getTargetId(e)}).indexOf(id, index + 1);
+			}
+
+			var index = linkArray.array.map((e) => {return linkArray.getSourceId(e)}).indexOf(id);
+			while (index != -1) {
+				indexes.push(index);
+				index = linkArray.array.map((e) => {return linkArray.getSourceId(e)}).indexOf(id, index + 1);
+			}
+
+			indexes.sort((a, b) => {return (b - a)})
+			indexes.forEach((index) => {
+				linkArray.array.splice(index, 1);
+			})
+
+		})
+
+	}
+
+	deleteLink(id) {
+		var index = this.rawInput.links.map((e) => {return e.id}).indexOf(id);
+		this.rawInput.links.splice(index, 1);
+
+		var index = this.input.links.map((e) => {return e.id}).indexOf(id);
+		this.input.links.splice(index, 1);
+
+		this.updateLinks();
+		this.initSimulation();
+	}
+
+	addNode() {
 
 	}
 
@@ -45,7 +144,7 @@ class Graph {
 		this.links = this.svg.append("g")
 			.attr("class", "links")
 			.selectAll("line")
-			.data(this.input.links)
+			.data(this.input.links, (d) => d.id)
 			.enter().append("line")
 			.attr("stroke-width", function(d) { return Math.sqrt(d.value); })
 			.attr("id", function(d) { return "n" + Math.min(d.source, d.target) + "-n" + Math.max(d.source, d.target); })
@@ -56,7 +155,7 @@ class Graph {
 		this.nodes = this.svg.append("g")
 			.attr("class", "nodes")
 			.selectAll("g")
-			.data(this.input.nodes)
+			.data(this.input.nodes, (d) => d.id)
 			.enter().append("g")
 			.attr("id", (d) => "n" + d.id)
 			.on("click", function(d) {
@@ -72,7 +171,6 @@ class Graph {
 					that.pathFinder.findPaths();
 					that.showLinks(that.pathFinder.getFoundPaths());
 				}
-
 			});
 
 		this.circles = this.nodes.append("circle")
@@ -82,6 +180,7 @@ class Graph {
 				.on("start", (d) => this.dragstarted(d))
 				.on("drag", (d) => this.dragged(d))
 				.on("end", (d) => this.dragended(d)));
+
 
 		this.lables = this.nodes.append("text")
 			.text(function(d) {
@@ -110,6 +209,33 @@ class Graph {
 		if (!d3.event.active) this.simulation.alphaTarget(0);
 		d.fx = null;
 		d.fy = null;
+	}
+
+	initSimulation() {
+		this.simulation = d3.forceSimulation()
+			.force("link", d3.forceLink().id(function(d) { return d.id; }))
+			.force("charge", d3.forceManyBody())
+			.force("center", d3.forceCenter(this.width / 2, this.height / 2));
+
+		this.simulation
+			.nodes(this.input.nodes)
+			.on("tick", () => { this.ticked() });
+
+		this.simulation.force("link")
+			.links(this.input.links);
+	}
+
+	ticked() {
+		this.links
+			.attr("x1", function(d) { return d.source.x; })
+			.attr("y1", function(d) { return d.source.y; })
+			.attr("x2", function(d) { return d.target.x; })
+			.attr("y2", function(d) { return d.target.y; });
+
+		this.nodes
+			.attr("transform", function(d) {
+				return "translate(" + d.x + "," + d.y + ")";
+			})
 	}
 
 	generateSelectorArray() {
@@ -172,33 +298,6 @@ class Graph {
 
 		console.log("firstSelectedNode: " + this.firstSelectedNode);
 		console.log("lastSelectedNode: " + this.lastSelectedNode);
-	}
-
-	initSimulation() {
-		this.simulation = d3.forceSimulation()
-			.force("link", d3.forceLink().id(function(d) { return d.id; }))
-			.force("charge", d3.forceManyBody())
-			.force("center", d3.forceCenter(this.width / 2, this.height / 2));
-
-		this.simulation
-			.nodes(this.input.nodes)
-			.on("tick", () => { this.ticked() });
-
-		this.simulation.force("link")
-			.links(this.input.links);
-	}
-
-	ticked() {
-		this.links
-			.attr("x1", function(d) { return d.source.x; })
-			.attr("y1", function(d) { return d.source.y; })
-			.attr("x2", function(d) { return d.target.x; })
-			.attr("y2", function(d) { return d.target.y; });
-
-		this.nodes
-			.attr("transform", function(d) {
-				return "translate(" + d.x + "," + d.y + ")";
-			})
 	}
 }
 
