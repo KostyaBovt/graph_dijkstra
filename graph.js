@@ -8,6 +8,7 @@ class Graph {
 			this.initLinks();
 			this.initNodes();
 			this.initSimulation();
+			this.initEventsEnvironment();
 			this.pathFinder = null;
 
 			// setTimeout(() => {
@@ -31,6 +32,58 @@ class Graph {
 			console.log(this.input);
 			console.log(this.rawInput);
 		});
+
+	}
+
+	keydown() {
+		if (this.keyDown != -1) {
+			return;
+		}
+		this.keyDown = d3.event.keyCode;
+		console.log("KEY DOWN: " + this.keyDown);
+
+		switch (d3.event.keyCode) {
+			case 17:
+				this.highlightAll();
+				break;
+		}	
+	}
+
+	highlightAll() {
+		this.links
+			.classed("highlight", true);
+		this.nodes
+			.classed("highlight", true);
+	}
+
+	unHighlightAll() {
+		this.links
+			.classed("highlight", false)
+		this.nodes
+			.classed("highlight", false)
+	}
+
+	keyup() {
+		if (this.keyDown != d3.event.keyCode) {
+			return;
+		}
+		console.log("KEY UP " + this.keyDown);
+		this.keyDown = -1;
+
+		switch (d3.event.keyCode) {
+			case 17:
+				this.unHighlightAll();
+				break;
+		}
+
+	}
+
+	initEventsEnvironment() {
+		this.keyDown = -1;
+
+		d3.select(window)
+			.on('keydown', () => {this.keydown()})
+			.on('keyup', () => {this.keyup()});
 
 	}
 
@@ -212,6 +265,7 @@ class Graph {
 
 		this.firstSelectedNode = null;
 		this.lastSelectedNode = null;
+		this.selection = {nodes: new Set(), links: new Set()};
 	}
 
 	initLinks() {
@@ -247,6 +301,12 @@ class Graph {
 		}
 	}
 
+	updateSelection(selectionType, d, element) {
+		if (this.selection[selectionType].has(d.id)) {
+			
+		}
+	}
+
 	initNodes() {
 		var that = this;
 		var selection = this.svg.select(".nodes")
@@ -257,13 +317,18 @@ class Graph {
 			.enter().append("g")
 			.attr("id", (d) => "n" + d.id)
 			.on("click", function(d) {
-				that.selectNode(d, this);
-				that.findPaths();
+				if (that.keyDown == 17) {
+					console.log(this);
+					console.log(d);
+					that.updateSelection("nodes", d, this)
+				} else {
+					that.selectStartEndNode(d, this);
+					that.findPaths();
+				}
 			});
 
 		newNodes.append("circle")
 			.attr("r", 7)
-			.attr("fill", "#6ba3ff")
 			.call(d3.drag()
 				.on("start", (d) => this.dragstarted(d))
 				.on("drag", (d) => this.dragged(d))
@@ -354,13 +419,13 @@ class Graph {
 				var min = Math.min(foundPath[i], foundPath[i + 1]);
 				var max = Math.max(foundPath[i], foundPath[i + 1]);
 				var id = "#n" + min + "-n" + max;
-				var sclass = "selected-" + ((num >= 5) ? "n" : (num + 1));
+				var sclass = "path-" + ((num >= 5) ? "n" : (num + 1));
 				this.svg.select(id).classed(sclass, true);
 
 				//color nodes
 				if (i) {
 					var id = "#n" + foundPath[i];
-					var sclass = "selected-" + ((num >= 5) ? "n" : (num + 1));
+					var sclass = "path-" + ((num >= 5) ? "n" : (num + 1));
 					this.svg.select(id).classed(sclass, true);
 				}
 			}
@@ -371,18 +436,18 @@ class Graph {
 		var selectorArray = this.generateSelectorArray();
 		// uncolor links
 		selectorArray.forEach((selector) => {
-			var sclass = "selected-" + selector;
+			var sclass = "path-" + selector;
 			this.svg.selectAll("line." + sclass).classed(sclass, false);		
 		})
 
 		// uncolor nodes
 		selectorArray.forEach((selector) => {
-			var sclass = "selected-" + selector;
+			var sclass = "path-" + selector;
 			this.svg.selectAll(".nodes ." + sclass).classed(sclass, false);
 		})
 	}
 
-	selectNode(d, node) {
+	selectStartEndNode(d, node) {
 		if (d3.select(node).classed("end-node")) {
 			return;
 		}

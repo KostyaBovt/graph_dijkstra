@@ -1,34 +1,41 @@
 .nodes circle {
+  fill: #42abd1;
   stroke: #fff;
   stroke-width: 1.5px;
 }
 
+.nodes g.highlight circle:hover {
+  fill: #ff7c7c;
+}
+
+.nodes g.selected circle {
+  fill: #ff0000;
+}
+
 .nodes g.start-node circle {
   stroke: #ad0000;
-  stroke-width: 1.5px;
 }
 
 .nodes g.end-node circle {
   stroke: #ad0000;
-  stroke-width: 1.5px;
 }
 
-.nodes g.selected-1 circle {
+.nodes g.path-1 circle {
   stroke: #1B3409;
 }
-.nodes g.selected-2 circle {
+.nodes g.path-2 circle {
   stroke: #609B36;
 }
-.nodes g.selected-3 circle {
+.nodes g.path-3 circle {
   stroke: #BAE326;
 }
-.nodes g.selected-4 circle {
+.nodes g.path-4 circle {
   stroke: #F9F901;
 }
-.nodes g.selected-5 circle {
+.nodes g.path-5 circle {
   stroke: #F5F5A3;
 }
-.nodes g.selected-n circle {
+.nodes g.path-n circle {
   stroke: #ffd1d1;
 }
 
@@ -37,36 +44,49 @@ line {
   stroke-width: 0.7px;
 }
 
-line.selected-1, line.selected-2, line.selected-3,  line.selected-4,  line.selected-5, line.selected-n {
+line.highlight {
+  stroke-width: 3px;
+}
+
+line.path-1.highlight, line.path-2.highlight, line.path-3.highlight,  line.path-4.highlight,  line.path-5.highlight, line.path-n.highlight {
+  stroke-width: 3px;
+}
+
+line.highlight:hover {
+  stroke-width: 4px;
+  stroke: #ff7c7c;
+}
+
+line.path-1, line.path-2, line.path-3,  line.path-4,  line.path-5, line.path-n {
   stroke-width: 1.8px;
 }
 
-line.selected-1 {
+line.path-1 {
   stroke: #1B3409;
   /*stroke-dasharray: 0.1%;*/
 }
 
-line.selected-2 {
+line.path-2 {
   stroke: #609B36;
   /*stroke-dasharray: 0.3%;*/
 }
 
-line.selected-3 {
+line.path-3 {
   stroke: #BAE326;
   /*stroke-dasharray: 0.5%;*/
 }
 
-line.selected-4 {
+line.path-4 {
   stroke: #F9F901;
   /*stroke-dasharray: 0.7%;*/
 }
 
-line.selected-5 {
+line.path-5 {
   stroke: #F5F5A3;
   /*stroke-dasharray: 0.9%;*/
 }
 
-line.selected-n {
+line.path-n {
   stroke: #ffd1d1;
   /*stroke-dasharray: 0.9%;*/
 }
