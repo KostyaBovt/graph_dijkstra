@@ -10,52 +10,51 @@ class Graph {
 			this.initSimulation();
 			this.pathFinder = null;
 
-
 			// setTimeout(() => {
 			// 	this.deleteNode(30);
 			// }, 4000)
 			// setTimeout(() => {
-			// 	this.deleteLink(1);
+			// 	this.deleteNode(16);
 			// }, 4000)
-			// console.log(this.input);
-			// console.log(this.rawInput);
-			console.log(this.nodes);
-			console.log(this.links);
+			// setTimeout(() => {
+			// 	this.deleteNode(23);
+			// }, 7000)
+			// setTimeout(() => {
+			// 	this.deleteLink(55);
+			// }, 6000)
+			// setTimeout(() => {
+			// 	this.addNode(306, 306);
+			// }, 4000)
+			// setTimeout(() => {
+			// 	this.addLink(16, 26);
+			// }, 9000)
+			console.log(this.input);
+			console.log(this.rawInput);
 		});
 
 	}
 
-	updateLinks() {
-		var l = d3.selectAll(".links line")
-			.data(this.input.links, (d) => d.id);
-
-		l.exit().remove();
-	}
-
-	updateNodes() {
-		var n = d3.selectAll(".nodes g")
-			.data(this.input.nodes, (d) => d.id)
-
-		n.exit().remove();
-			
-	}
-
 	deleteNode(id) {
-		
+		if (this.firstSelectedNode == id || this.lastSelectedNode == id) {
+			d3.selectAll(".nodes .start-node").classed("start-node", false);
+			d3.selectAll(".nodes .end-node").classed("end-node", false);
+			this.firstSelectedNode = null;
+			this.lastSelectedNode = null;
+		}
+
 		var nodeArrays = [this.rawInput.nodes, this.input.nodes]; 
 
 		nodeArrays.forEach((nodeArray) => {
 			var index = nodeArray.map((e)=>{return e.id}).indexOf(id);
-			if (index != -1)
-			{
+			if (index != -1) {
 				nodeArray.splice(index, 1);
 			}
 		})
 		this.deleteNodeLinks(id);
-		this.updateNodes();
-		this.updateLinks();
-		this.initSimulation();
-
+		this.initNodes();
+		this.initLinks();
+		this.updateSimulation();
+		this.findPaths();
 	}
 
 	deleteNodeLinks(id) {
@@ -104,12 +103,80 @@ class Graph {
 		var index = this.input.links.map((e) => {return e.id}).indexOf(id);
 		this.input.links.splice(index, 1);
 
-		this.updateLinks();
-		this.initSimulation();
+		this.initLinks();
+		this.updateSimulation();
+		this.findPaths();
 	}
 
-	addNode() {
+	addLink(sourceId, targetId) {
+		this.addLinkToInput(sourceId, targetId);
+		this.addLinkToRawInput(sourceId, targetId);
+		this.initLinks();
+		this.updateSimulation();
+		this.findPaths();		
+	}
 
+	addLinkToInput(sourceId, targetId) {
+		var sourceIndex = this.input.nodes.map((e) => {return e.id}).indexOf(sourceId);
+		var targetIndex = this.input.nodes.map((e) => {return e.id}).indexOf(targetId);
+		var newLink = {
+			id: this.getMaxArrayId(this.input.links) + 1,
+			index: this.getMaxArrayIndex(this.input.links) + 1,
+			source: this.input.nodes[sourceIndex],
+			target: this.input.nodes[targetIndex],
+			value: 1
+		};
+		this.input.links.push(newLink);
+	}
+
+	addLinkToRawInput(sourceId, targetId) {
+		var newLink = {
+			id: this.getMaxArrayId(this.rawInput.links) + 1,
+			source: sourceId,
+			target: targetId,
+			value: 1
+		}
+		this.rawInput.links.push(newLink);
+	}
+
+	addNode(x, y) {
+		this.addNodeToInput(x, y);
+		this.addNodeToRawInput(x, y);
+		this.initNodes();
+		this.updateSimulation();		
+	}
+
+	addNodeToInput(x, y) {
+		var newNode = {
+			id: this.getMaxArrayId(this.input.nodes) + 1,
+			index: this.getMaxArrayIndex(this.input.nodes) + 1,
+			vx: 0,
+			vy: 0,
+			x: x,
+			y: y
+		}
+		this.input.nodes.push(newNode);
+	}
+
+	addNodeToRawInput(x, y) {
+		var newNode = {
+			id: this.getMaxArrayId(this.rawInput.nodes) + 1,
+		}
+		this.rawInput.nodes.push(newNode);
+	}
+
+	getMaxArrayId(nodeArray) {
+		var maxId = nodeArray[0]["id"];
+		for (var i = nodeArray.length - 1; i >= 0; i--) {
+			if (nodeArray[i]["id"] > maxId ) {
+				maxId = nodeArray[i]["id"];
+			}
+		}
+		return maxId;
+	}
+
+	getMaxArrayIndex(nodeArray) {
+		return nodeArray.length - 1;
 	}
 
 	copyInput(input) {
@@ -136,62 +203,85 @@ class Graph {
 		this.svg = d3.select("svg");
 		this.width = +this.svg.attr("width");
 		this.height = +this.svg.attr("height");
+
+		this.svg.append("g")
+			.attr("class", "links");
+
+		this.svg.append("g")
+			.attr("class", "nodes");
+
 		this.firstSelectedNode = null;
 		this.lastSelectedNode = null;
 	}
 
 	initLinks() {
-		this.links = this.svg.append("g")
-			.attr("class", "links")
+		var selection = this.svg.select(".links")
 			.selectAll("line")
 			.data(this.input.links, (d) => d.id)
+
+		var newLinks = selection
 			.enter().append("line")
 			.attr("stroke-width", function(d) { return Math.sqrt(d.value); })
-			.attr("id", function(d) { return "n" + Math.min(d.source, d.target) + "-n" + Math.max(d.source, d.target); })
+			.attr("id", function(d) {
+				var sourceId = d.source.id ? d.source.id : d.source;
+				var targetId = d.target.id ? d.target.id : d.target;
+				return "n" + Math.min(sourceId, targetId) + "-n" + Math.max(sourceId, targetId); 
+			})
+
+		selection.exit().remove();
+
+		this.links = this.svg.select(".links").selectAll("line");
+	}
+
+	findPaths() {
+		this.hidePaths();
+		if (this.firstSelectedNode !== null && this.lastSelectedNode !== null) {
+			this.pathFinder = new PathFinder(
+				this.rawInput.nodes,
+				this.rawInput.links,
+				this.firstSelectedNode,
+				this.lastSelectedNode
+			);
+			this.pathFinder.findPaths();
+			this.showPaths(this.pathFinder.getFoundPaths());
+		}
 	}
 
 	initNodes() {
 		var that = this;
-		this.nodes = this.svg.append("g")
-			.attr("class", "nodes")
+		var selection = this.svg.select(".nodes")
 			.selectAll("g")
 			.data(this.input.nodes, (d) => d.id)
+
+		var newNodes = selection
 			.enter().append("g")
 			.attr("id", (d) => "n" + d.id)
 			.on("click", function(d) {
 				that.selectNode(d, this);
-				that.hideLinks();
-				if (that.firstSelectedNode !== null && that.lastSelectedNode !== null) {
-					that.pathFinder = new PathFinder(
-						that.rawInput.nodes,
-						that.rawInput.links,
-						that.firstSelectedNode,
-						that.lastSelectedNode
-					);
-					that.pathFinder.findPaths();
-					that.showLinks(that.pathFinder.getFoundPaths());
-				}
+				that.findPaths();
 			});
 
-		this.circles = this.nodes.append("circle")
-			.attr("r", 5)
+		newNodes.append("circle")
+			.attr("r", 7)
 			.attr("fill", "#6ba3ff")
 			.call(d3.drag()
 				.on("start", (d) => this.dragstarted(d))
 				.on("drag", (d) => this.dragged(d))
 				.on("end", (d) => this.dragended(d)));
 
-
-		this.lables = this.nodes.append("text")
+		newNodes.append("text")
 			.text(function(d) {
 				return d.id;
 			})
 			.attr('x', 6)
 			.attr('y', 3);
 
-		this.nodes.append("title")
+		newNodes.append("title")
 			.text(function(d) { return d.id; });
 
+		selection.exit().remove();
+
+		this.nodes = this.svg.select(".nodes").selectAll("g");
 	}
 
 	dragstarted(d) {
@@ -225,6 +315,14 @@ class Graph {
 			.links(this.input.links);
 	}
 
+	updateSimulation() {
+		this.simulation
+			.nodes(this.input.nodes)
+			.force("link").links(this.input.links);
+
+		this.simulation.alphaTarget(0.3).restart();
+	}
+
 	ticked() {
 		this.links
 			.attr("x1", function(d) { return d.source.x; })
@@ -249,7 +347,7 @@ class Graph {
 		return arr;
 	}
 
-	showLinks(foundPaths) {
+	showPaths(foundPaths) {
 		foundPaths.forEach((foundPath, num) => {
 			for (var i = 0; i < foundPath.length - 1; i++) {
 				// color links
@@ -269,7 +367,7 @@ class Graph {
 		})
 	}
 
-	hideLinks() {
+	hidePaths() {
 		var selectorArray = this.generateSelectorArray();
 		// uncolor links
 		selectorArray.forEach((selector) => {
@@ -298,150 +396,5 @@ class Graph {
 
 		console.log("firstSelectedNode: " + this.firstSelectedNode);
 		console.log("lastSelectedNode: " + this.lastSelectedNode);
-	}
-}
-
-
-class PathFinder {
-	constructor(nodes, links, startId, endId) {
-		this.initNodes = nodes;
-		this.initLinks = links;
-
-		this.nodes = {};
-		this.initMap();
-
-		this.startNode = this.nodes[startId];
-		this.endNote = this.nodes[endId];
-		this.currentNode = this.startNode;
-		this.refreshEnvironment();
-
-		this.foundPaths = [];
-		this.directPathAdded = false;
-		this.nodeInPath = {};
-		this.stopFindPaths = false;
-	}
-
-
-	refreshEnvironment() {
-		this.currentNode = this.startNode;
-		this.nodeDistances = {};
-		this.nodeDistances[this.startNode.id] = 0;
-		this.nodeVisited = {};
-		this.nodePaths = {};
-		this.nodePaths[this.currentNode.id] = [this.startNode.id];
-		this.stopFindPath = false;
-	}
-
-	initMap() {
-		this.initNodes.forEach( (element) => {  this.addNode(element)});
-		this.initLinks.forEach( (element) => {  this.addLink(element)});
-	}
-
-	addNode(node) {
-		this.nodes[node.id] = {
-			id: node.id,
-			links: {},
-			visited: false,
-			distance: 4503599627370496,
-			path: []
-		};
-	}
-
-	addLink(link) {
-		this.nodes[link.source]["links"][link.target] = link.value;
-		this.nodes[link.target]["links"][link.source] = link.value;
-	}
-
-	updateStartEndNodes(startId, endId) {
-		this.startNode = this.nodes[startId];
-		this.endNote = this.nodes[endId];
-	}
-
-	findPaths() {
-		while (!this.stopFindPaths && this.foundPaths.length < MAX_PATHS) {
-			this.findPath();
-		}
-		console.log(this.foundPaths);
-	}
-
-	findPath() {
-		this.refreshEnvironment();
-		while (!this.stopFindPath) {
-			this.visitCurrentNode();
-			this.currentNode = this.getNearestNode();
-		}
-		if (this.nodeVisited[this.endNote.id]) {
-			var foundPath = this.nodePaths[this.endNote.id].slice();
-			if (foundPath.length == 2) {
-				this.directPathAdded = true;
-			}
-			this.foundPaths.push(foundPath);
-			this.updatedNodeInPath(foundPath);
-		} else {
-			this.stopFindPaths = true;
-		}
-
-	}
-
-	updatedNodeInPath(foundPath) {
-		for (var i = foundPath.length - 2; i >= 1; i--) {
-			this.nodeInPath[foundPath[i]] = true;
-		}
-	}
-
-	visitCurrentNode() {
-		for (var key in this.currentNode.links) {
-			if (this.nodeVisited[key] || this.nodeInPath[key]) {
-				continue;
-			}
-
-			if ((this.currentNode.id == this.startNode.id) && (this.nodes[key]["id"] == this.endNote.id)) {
-				if (this.directPathAdded) {
-					continue;
-				}
-			}
-			this.updateNodeDistance(key);
-		}
-		this.nodeVisited[this.currentNode.id] = true;
-		delete this.nodeDistances[this.currentNode.id];
-		if (this.currentNode.id == this.endNote.id) {
-			this.stopFindPath = true;
-			return;
-		}	
-	}
-
-	getNearestNode() {
-		if (Object.keys(this.nodeDistances).length === 0) {
-			this.stopFindPath = true;
-			return null;
-		}
-		var nearestNodeId = Object.keys(this.nodeDistances)[0];
-		var nearestNodeDistance = this.nodeDistances[nearestNodeId];
-		for (var key in this.nodeDistances) {
-			if (this.nodeDistances[key] < nearestNodeDistance) {
-				nearestNodeId = key;
-				nearestNodeDistance = this.nodeDistances[key];
-			}
-		}
-		return this.nodes[nearestNodeId];
-	}
-
-	updateNodeDistance(linkedNodeId) {
-		var currentDistance = this.nodeDistances[linkedNodeId] ? this.nodeDistances[linkedNodeId] : 4503599627370496;
-		var newDistance = this.nodeDistances[this.currentNode.id] + this.currentNode.links[linkedNodeId];
-		if (newDistance < currentDistance) {
-			this.nodeDistances[linkedNodeId] = newDistance;
-			this.updateNodePath(linkedNodeId);
-		}
-	}
-
-	updateNodePath(linkedNodeId) {
-		var newPath = this.nodePaths[this.currentNode.id].slice();
-		newPath.push(linkedNodeId);
-		this.nodePaths[linkedNodeId] = newPath;
-	}
-
-	getFoundPaths() {
-		return this.foundPaths;
 	}
 }
