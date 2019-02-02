@@ -36,17 +36,50 @@ class Graph {
 	}
 
 	keydown() {
+		d3.event.preventDefault();
 		if (this.keyDown != -1) {
+			console.log("key alredy pressed: " + this.keyDown);
 			return;
 		}
+
+		if (this.keyCodesAllowed.indexOf(d3.event.keyCode) == -1) {
+			console.log("key is not allowed: " + d3.event.keyCode);
+			return;
+		}
+
 		this.keyDown = d3.event.keyCode;
 		console.log("KEY DOWN: " + this.keyDown);
 
 		switch (d3.event.keyCode) {
+			case 16:
+				this.highlightSvg();
+				break;
 			case 17:
 				this.highlightAll();
 				break;
+			case 46:
+				this.deleteSelected();
+				break;
 		}	
+	}
+
+	highlightSvg() {
+		this.svg
+			.classed("highlight", true);
+	}
+
+	unHighlightSvg() {
+		this.svg
+			.classed("highlight", false);
+	}
+
+	deleteSelected() {
+		this.selection.nodes.forEach((nodeId) => {
+			this.deleteNode(nodeId);
+		});
+		this.selection.links.forEach((linkId) => {
+			this.deleteLink(linkId);
+		});
 	}
 
 	highlightAll() {
@@ -71,6 +104,9 @@ class Graph {
 		this.keyDown = -1;
 
 		switch (d3.event.keyCode) {
+			case 16:
+				this.unHighlightSvg();
+				break;
 			case 17:
 				this.unHighlightAll();
 				break;
@@ -80,11 +116,18 @@ class Graph {
 
 	initEventsEnvironment() {
 		this.keyDown = -1;
+		this.keyCodesAllowed = [16, 17, 46];
 
 		d3.select(window)
 			.on('keydown', () => {this.keydown()})
 			.on('keyup', () => {this.keyup()});
 
+		this.svg
+			.on("click", (d) =>  {
+				if (this.keyDown == 16) {
+					this.addNode(d3.event.x, d3.event.y);
+				}
+			})
 	}
 
 	deleteNode(id) {
@@ -196,7 +239,7 @@ class Graph {
 		this.addNodeToInput(x, y);
 		this.addNodeToRawInput(x, y);
 		this.initNodes();
-		this.updateSimulation();		
+		// this.updateSimulation();		
 	}
 
 	addNodeToInput(x, y) {
@@ -269,6 +312,7 @@ class Graph {
 	}
 
 	initLinks() {
+		var that = this;
 		var selection = this.svg.select(".links")
 			.selectAll("line")
 			.data(this.input.links, (d) => d.id)
@@ -281,6 +325,12 @@ class Graph {
 				var targetId = d.target.id ? d.target.id : d.target;
 				return "n" + Math.min(sourceId, targetId) + "-n" + Math.max(sourceId, targetId); 
 			})
+			.on("click", function(d) {
+				d3.event.stopPropagation();
+				if (that.keyDown == 17) {
+					that.updateSelection("links", d, this)
+				}
+			});
 
 		selection.exit().remove();
 
@@ -302,8 +352,12 @@ class Graph {
 	}
 
 	updateSelection(selectionType, d, element) {
-		if (this.selection[selectionType].has(d.id)) {
-			
+		if (!this.selection[selectionType].has(d.id)) {
+			this.selection[selectionType].add(d.id);
+			d3.select(element).classed("selected", true);
+		} else {
+			this.selection[selectionType].delete(d.id);
+			d3.select(element).classed("selected", false);
 		}
 	}
 
@@ -315,11 +369,15 @@ class Graph {
 
 		var newNodes = selection
 			.enter().append("g")
-			.attr("id", (d) => "n" + d.id)
+			.attr("id", (d) => {console.log(Object.assign({}, d)); return "n" + d.id})
+			.attr("transform", (d) => {
+				if (d.x) {
+					return "translate(" + d.x + ".000001," + d.y + ".000001)";
+				}
+			})
 			.on("click", function(d) {
+				d3.event.stopPropagation();
 				if (that.keyDown == 17) {
-					console.log(this);
-					console.log(d);
 					that.updateSelection("nodes", d, this)
 				} else {
 					that.selectStartEndNode(d, this);
@@ -369,8 +427,8 @@ class Graph {
 	initSimulation() {
 		this.simulation = d3.forceSimulation()
 			.force("link", d3.forceLink().id(function(d) { return d.id; }))
-			.force("charge", d3.forceManyBody())
-			.force("center", d3.forceCenter(this.width / 2, this.height / 2));
+			.force("charge", d3.forceManyBody().strength(-30))
+			.force("center", d3.forceCenter(this.width / 2, this.height / 2))
 
 		this.simulation
 			.nodes(this.input.nodes)

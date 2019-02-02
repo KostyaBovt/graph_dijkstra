@@ -1,3 +1,7 @@
+svg.highlight {
+  background-color: #e2ffe7;
+}
+
 .nodes circle {
   fill: #42abd1;
   stroke: #fff;
@@ -42,6 +46,15 @@
 line {
   stroke: #D1D0D0;
   stroke-width: 0.7px;
+}
+
+line.selected {
+  stroke: #ff0000; 
+  stroke-width: 1.8px;
+}
+
+line.path-1.selected, line.path-2.selected, line.path-3.selected,  line.path-4.selected,  line.path-5.selected, line.path-n.selected {
+  stroke: #ff0000; 
 }
 
 line.highlight {
