@@ -18,6 +18,16 @@
 <div class="container">
   <div class="row">
     <div class="col-2">
+		<div class="input-group">
+			<form>
+			  <div class="form-group">
+			    <label for="file">Load new graph:</label>
+			    <input type="file" id="fileinput" class="form-control-file" >
+			  </div>
+			</form>
+
+    	</div>
+    	<hr>
     	<div class="pathfinder-mode">
     		<h5>PathFinder mode</h5>
     		<p> <small><b>[m]</b> - enter Modify mode</small></p>
@@ -46,7 +56,7 @@
     	</div>
     </div>
     <div class="col-10">
-	  <svg width="960" height="600"></svg>
+	  <svg id="main-svg" width="960" height="600"></svg>
     </div>
   </div>
 </div>

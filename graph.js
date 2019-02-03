@@ -10,27 +10,6 @@ class Graph {
 			this.initSimulation();
 			this.initEventsEnvironment();
 			this.pathFinder = null;
-
-			// setTimeout(() => {
-			// 	this.deleteNode(30);
-			// }, 4000)
-			// setTimeout(() => {
-			// 	this.deleteNode(16);
-			// }, 4000)
-			// setTimeout(() => {
-			// 	this.deleteNode(23);
-			// }, 7000)
-			// setTimeout(() => {
-			// 	this.deleteLink(55);
-			// }, 6000)
-			// setTimeout(() => {
-			// 	this.addNode(306, 306);
-			// }, 4000)
-			// setTimeout(() => {
-			// 	this.addLink(16, 26);
-			// }, 9000)
-			console.log(this.input);
-			console.log(this.rawInput);
 		});
 
 	}
@@ -208,6 +187,15 @@ class Graph {
 				if (that.modifyMode && that.addMode && !that.drawLineMode) {
 					var mouse = d3.mouse(this)
 					that.addNode(mouse[0],mouse[1]);
+					// start drawlinemode
+					if (that.modifyMode && that.addMode && !that.drawLineMode) {
+						//start drag new link
+						console.log("start drawing new link");
+						console.log(this);
+						console.log(d);
+						that.startDrawLine(that.input.nodes[that.getMaxArrayIndex(that.input.nodes)], this);
+						that.menuDrawLineModeOn();
+					}					
 				}
 			})
 			.on("mousemove", function(d) {
@@ -215,8 +203,6 @@ class Graph {
 					return;
 				}
 				that.drawLine
-					// .attr("x1", that.drawLineNode.x)
-					// .attr("y1", that.drawLineNode.y)
 					.attr("x2", d3.mouse(this)[0])
 					.attr("y2", d3.mouse(this)[1]);
 			});
@@ -542,15 +528,11 @@ class Graph {
 				if (that.modifyMode && that.addMode && !that.drawLineMode) {
 					//start drag new link
 					console.log("start drawing new link");
-					console.log(this);
-					console.log(d);
 					that.startDrawLine(d, this);
 					that.menuDrawLineModeOn();
 				} else if (that.modifyMode && that.addMode && that.drawLineMode) {
-					//start drag new link
+					//finish drag new link
 					console.log("second click drawing new link");
-					console.log(this);
-					console.log(d);
 					that.finishDrawLine(d, this);
 					that.menuAddModeOn();
 				}
