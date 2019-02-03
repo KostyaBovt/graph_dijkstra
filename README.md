@@ -38,7 +38,7 @@ This project was made using d3.js.
 * Click on nodes/link to select
 * Press `delete` to delete selected elements
 
-Press and hold `ctrl` to activate Add Mode:
+Press and hold `ctrl` in Modify mode:
 * now click on empty area to add node and than on another node to link new node to it
 * OR click on existing node and than on another node to link them 
 
