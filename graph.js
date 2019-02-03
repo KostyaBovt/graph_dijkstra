@@ -260,6 +260,7 @@ class Graph {
 					this.addMode = true;
 					this.unHighlightSelectable();
 					this.highlightLinkable();
+					this.simulation.stop();
 					this.menuAddModeOn();
 				}
 				break;
@@ -286,6 +287,7 @@ class Graph {
 					this.highlightSelectable();
 					this.unHighlightLinkable();
 					this.menuSelectionModeOn();
+					this.updateSimulation();
 				}
 
 				if (this.modifyMode && this.drawLineMode) {
@@ -691,8 +693,7 @@ class Graph {
 			.attr("y1", d.y)
 			.attr("x2", d.x)
 			.attr("y2", d.y)
-		this.drawLineNode = d;	
-
+		this.drawLineNode = d;
 	}
 
 	finishDrawLine(d, node) {
@@ -710,7 +711,7 @@ class Graph {
 			.attr("x1", -1)
 			.attr("y1", -1)
 			.attr("x2", -1)
-			.attr("y2", -1);		
+			.attr("y2", -1);
 	}
 
 	// ================== Helpers ==================
