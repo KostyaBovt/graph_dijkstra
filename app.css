@@ -1,3 +1,12 @@
+div.col-2 {
+  border: 0.5px dashed #D1D0D0;
+
+}
+
+svg {
+  border: 0.5px dashed #D1D0D0;
+}
+
 svg.highlight {
   background-color: #e2ffe7;
 }
@@ -8,8 +17,12 @@ svg.highlight {
   stroke-width: 1.5px;
 }
 
-.nodes g.highlight circle:hover {
+.nodes g.highlight.selectable circle:hover {
   fill: #ff7c7c;
+}
+
+.nodes g.highlight.linkable circle:hover {
+  fill: #fff72b;
 }
 
 .nodes g.selected circle {
@@ -48,6 +61,11 @@ line {
   stroke-width: 0.7px;
 }
 
+line.drawline {
+  stroke: green;
+  stroke-width: 3px;
+}
+
 line.selected {
   stroke: #ff0000; 
   stroke-width: 1.8px;
@@ -65,7 +83,7 @@ line.path-1.highlight, line.path-2.highlight, line.path-3.highlight,  line.path-
   stroke-width: 3px;
 }
 
-line.highlight:hover {
+line.highlight.selectable:hover {
   stroke-width: 4px;
   stroke: #ff7c7c;
 }

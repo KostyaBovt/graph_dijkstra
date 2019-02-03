@@ -51,11 +51,16 @@ class Graph {
 		console.log("KEY DOWN: " + this.keyDown);
 
 		switch (d3.event.keyCode) {
-			case 16:
-				this.highlightSvg();
+			case 77:
+				this.switchModifyMode();
 				break;
 			case 17:
-				this.highlightAll();
+				if (this.modifyMode) {
+					this.addMode = true;
+					this.unHighlightSelectable();
+					this.highlightLinkable();
+					this.menuAddModeOn();
+				}
 				break;
 			case 46:
 				this.deleteSelected();
@@ -63,14 +68,47 @@ class Graph {
 		}	
 	}
 
-	highlightSvg() {
-		this.svg
-			.classed("highlight", true);
+	switchModifyMode() {
+		if (this.modifyMode) {
+			this.modifyMode = false;
+			this.unHighlightAll();
+			this.unHighlightSelectable();
+			this.menuPathfinderModeOn();
+		} else {
+			this.modifyMode = true;
+			this.highlightAll();
+			this.highlightSelectable();
+			this.menuModifyModeOn();
+		}
 	}
 
-	unHighlightSvg() {
-		this.svg
-			.classed("highlight", false);
+	menuModifyModeOn() {
+		d3.select(".modify-mode").attr("hidden", null);
+		d3.select(".pathfinder-mode").attr("hidden", true);
+	}
+
+
+	menuPathfinderModeOn() {
+		d3.select(".pathfinder-mode").attr("hidden", null);
+		d3.select(".modify-mode").attr("hidden", true);
+	}
+
+	menuAddModeOn() {
+		d3.select(".add-submode").attr("hidden", null);
+		d3.select(".selection-submode").attr("hidden", true);
+		d3.select(".draw-submode").attr("hidden", true);
+	}
+
+	menuSelectionModeOn() {
+		d3.select(".selection-submode").attr("hidden", null);
+		d3.select(".add-submode").attr("hidden", true);
+		d3.select(".draw-submode").attr("hidden", true);
+	}
+
+	menuDrawLineModeOn() {
+		d3.select(".draw-submode").attr("hidden", null);
+		d3.select(".add-submode").attr("hidden", true);
+		d3.select(".selection-submode").attr("hidden", true);
 	}
 
 	deleteSelected() {
@@ -80,6 +118,9 @@ class Graph {
 		this.selection.links.forEach((linkId) => {
 			this.deleteLink(linkId);
 		});
+		this.selection.nodes.clear();
+		this.selection.links.clear();
+		this.menuSelectionExistUpdate();
 	}
 
 	highlightAll() {
@@ -87,14 +128,43 @@ class Graph {
 			.classed("highlight", true);
 		this.nodes
 			.classed("highlight", true);
+		this.svg
+			.classed("highlight", true);
 	}
 
 	unHighlightAll() {
 		this.links
-			.classed("highlight", false)
+			.classed("highlight", false);
 		this.nodes
-			.classed("highlight", false)
+			.classed("highlight", false);
+		this.svg
+			.classed("highlight", false);			
 	}
+
+	highlightSelectable() {
+		this.links
+			.classed("selectable", true)
+		this.nodes
+			.classed("selectable", true)
+	}
+
+	unHighlightSelectable() {
+		this.links
+			.classed("selectable", false)
+		this.nodes
+			.classed("selectable", false)
+	}
+
+	highlightLinkable() {
+		this.nodes
+			.classed("linkable", true)
+	}
+
+	unHighlightLinkable() {
+		this.nodes
+			.classed("linkable", false)
+	}
+
 
 	keyup() {
 		if (this.keyDown != d3.event.keyCode) {
@@ -104,11 +174,18 @@ class Graph {
 		this.keyDown = -1;
 
 		switch (d3.event.keyCode) {
-			case 16:
-				this.unHighlightSvg();
-				break;
 			case 17:
-				this.unHighlightAll();
+				if (this.modifyMode) {
+					this.addMode = false;
+					this.highlightSelectable();
+					this.unHighlightLinkable();
+					this.menuSelectionModeOn();
+				}
+
+				if (this.modifyMode && this.drawLineMode) {
+					this.cancelDrawLineMode();
+					this.menuSelectionModeOn();
+				}
 				break;
 		}
 
@@ -116,18 +193,33 @@ class Graph {
 
 	initEventsEnvironment() {
 		this.keyDown = -1;
-		this.keyCodesAllowed = [16, 17, 46];
+		this.modifyMode = false;
+		this.addMode = false;
+		this.drawLineMode = false;
+		this.keyCodesAllowed = [17, 77, 46];
 
 		d3.select(window)
 			.on('keydown', () => {this.keydown()})
 			.on('keyup', () => {this.keyup()});
 
+		var that = this;
 		this.svg
-			.on("click", (d) =>  {
-				if (this.keyDown == 16) {
-					this.addNode(d3.event.x, d3.event.y);
+			.on("click", function(d)  {
+				if (that.modifyMode && that.addMode && !that.drawLineMode) {
+					var mouse = d3.mouse(this)
+					that.addNode(mouse[0],mouse[1]);
 				}
 			})
+			.on("mousemove", function(d) {
+				if (!that.drawLineMode) {
+					return;
+				}
+				that.drawLine
+					// .attr("x1", that.drawLineNode.x)
+					// .attr("y1", that.drawLineNode.y)
+					.attr("x2", d3.mouse(this)[0])
+					.attr("y2", d3.mouse(this)[1]);
+			});
 	}
 
 	deleteNode(id) {
@@ -204,12 +296,36 @@ class Graph {
 		this.findPaths();
 	}
 
+	checkLinkExist(sourceId, targetId) {
+		for (var i = this.rawInput.links.length - 1; i >= 0; i--) {
+			var target = this.rawInput.links[i].target;
+			var source = this.rawInput.links[i].source;
+			if (targetId == target && sourceId == source) {
+				return true;
+			}
+			if (targetId == source && sourceId == target) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	addLink(sourceId, targetId) {
+		if (sourceId == targetId) {
+			return;
+		}
+
+		if (this.checkLinkExist(sourceId, targetId)) {
+			return;
+		}
+
 		this.addLinkToInput(sourceId, targetId);
 		this.addLinkToRawInput(sourceId, targetId);
 		this.initLinks();
 		this.updateSimulation();
-		this.findPaths();		
+		this.findPaths();
+		this.highlightAll();
+		this.highlightSelectable();	
 	}
 
 	addLinkToInput(sourceId, targetId) {
@@ -239,6 +355,8 @@ class Graph {
 		this.addNodeToInput(x, y);
 		this.addNodeToRawInput(x, y);
 		this.initNodes();
+		this.highlightAll();
+		this.highlightLinkable();
 		// this.updateSimulation();		
 	}
 
@@ -288,13 +406,6 @@ class Graph {
 		return newInput;
 	}
 
-	printGraph(nodes, links) {
-		console.log('nodes: ');
-		console.log(nodes);
-		console.log('links: ');
-		console.log(links);
-	}
-
 	initEnvironment() {
 		this.svg = d3.select("svg");
 		this.width = +this.svg.attr("width");
@@ -302,6 +413,13 @@ class Graph {
 
 		this.svg.append("g")
 			.attr("class", "links");
+
+		this.drawLine = this.svg.append("line")
+			.classed("drawline", true)
+			.attr("x1", -1)
+			.attr("y1", -1)
+			.attr("x2", -1)
+			.attr("y2", -1);
 
 		this.svg.append("g")
 			.attr("class", "nodes");
@@ -321,15 +439,15 @@ class Graph {
 			.enter().append("line")
 			.attr("stroke-width", function(d) { return Math.sqrt(d.value); })
 			.attr("id", function(d) {
-				var sourceId = d.source.id ? d.source.id : d.source;
-				var targetId = d.target.id ? d.target.id : d.target;
+				var sourceId = d.source.id != undefined ? d.source.id : d.source;
+				var targetId = d.target.id != undefined ? d.target.id : d.target;
 				return "n" + Math.min(sourceId, targetId) + "-n" + Math.max(sourceId, targetId); 
 			})
 			.on("click", function(d) {
 				d3.event.stopPropagation();
-				if (that.keyDown == 17) {
+				if (that.modifyMode && !that.addMode) {
 					that.updateSelection("links", d, this)
-				}
+				}				
 			});
 
 		selection.exit().remove();
@@ -351,14 +469,53 @@ class Graph {
 		}
 	}
 
+	menuSelectionExistUpdate() {
+		if (this.selection.nodes.size || this.selection.links.size) {
+			d3.select(".selection-exist").attr("hidden", null);
+		} else {
+			d3.select(".selection-exist").attr("hidden", true);
+		}
+	}
+
 	updateSelection(selectionType, d, element) {
 		if (!this.selection[selectionType].has(d.id)) {
 			this.selection[selectionType].add(d.id);
 			d3.select(element).classed("selected", true);
+			this.menuSelectionExistUpdate();
 		} else {
 			this.selection[selectionType].delete(d.id);
 			d3.select(element).classed("selected", false);
+			this.menuSelectionExistUpdate();
 		}
+	}
+
+	cancelDrawLineMode() {
+		this.drawLineMode = false;
+		this.drawLineNode = null;
+		this.drawLine
+			.attr("x1", -1)
+			.attr("y1", -1)
+			.attr("x2", -1)
+			.attr("y2", -1);		
+	}	
+
+	startDrawLine(d, node) {
+		this.drawLineMode = true;
+		this.drawLine
+			.attr("x1", d.x)
+			.attr("y1", d.y)
+			.attr("x2", d.x)
+			.attr("y2", d.y)
+		this.drawLineNode = d;	
+
+	}
+
+	finishDrawLine(d, node) {
+		if (d.id != this.drawLineNode.id) {
+			this.addLink(this.drawLineNode.id, d.id);
+		}
+		this.cancelDrawLineMode();
+		this.menuAddModeOn();
 	}
 
 	initNodes() {
@@ -369,17 +526,36 @@ class Graph {
 
 		var newNodes = selection
 			.enter().append("g")
-			.attr("id", (d) => {console.log(Object.assign({}, d)); return "n" + d.id})
+			.attr("id", (d) => { return "n" + d.id })
 			.attr("transform", (d) => {
 				if (d.x) {
-					return "translate(" + d.x + ".000001," + d.y + ".000001)";
+					return "translate(" + d.x + "," + d.y + ")";
 				}
 			})
 			.on("click", function(d) {
+				console.log("click node");
 				d3.event.stopPropagation();
-				if (that.keyDown == 17) {
+				if (that.modifyMode && !that.addMode) {
 					that.updateSelection("nodes", d, this)
-				} else {
+				}
+
+				if (that.modifyMode && that.addMode && !that.drawLineMode) {
+					//start drag new link
+					console.log("start drawing new link");
+					console.log(this);
+					console.log(d);
+					that.startDrawLine(d, this);
+					that.menuDrawLineModeOn();
+				} else if (that.modifyMode && that.addMode && that.drawLineMode) {
+					//start drag new link
+					console.log("second click drawing new link");
+					console.log(this);
+					console.log(d);
+					that.finishDrawLine(d, this);
+					that.menuAddModeOn();
+				}
+
+				if (!that.modifyMode) {
 					that.selectStartEndNode(d, this);
 					that.findPaths();
 				}
@@ -447,6 +623,7 @@ class Graph {
 	}
 
 	ticked() {
+		var that = this;
 		this.links
 			.attr("x1", function(d) { return d.source.x; })
 			.attr("y1", function(d) { return d.source.y; })
@@ -455,8 +632,16 @@ class Graph {
 
 		this.nodes
 			.attr("transform", function(d) {
+				if (that.drawLineMode) {
+					that.drawLine
+						.attr("x1", that.drawLineNode.x)
+						.attr("y1", that.drawLineNode.y);
+				}
 				return "translate(" + d.x + "," + d.y + ")";
 			})
+
+
+
 	}
 
 	generateSelectorArray() {

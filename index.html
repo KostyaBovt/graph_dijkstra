@@ -1,7 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+   <!-- Required meta tags -->
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+   <!-- Bootstrap CSS -->
+   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
   <title>Dijkstra</title>
   <link rel="stylesheet" href="app.css">
   <script src="https://d3js.org/d3.v4.min.js"></script>
@@ -10,6 +15,40 @@
   <script src="app.js"></script>
 </head>
 <body>
-  <svg width="960" height="600"></svg>
+<div class="container">
+  <div class="row">
+    <div class="col-2">
+    	<div class="pathfinder-mode">
+    		<h5>PathFinder mode</h5>
+    		<p> <small><b>[m]</b> - enter Modify mode</small></p>
+    		<hr>
+    		<p><b>[click]</b> on <span style="background-color: #42abd1">nodes</span> to select</p>	
+    	</div>
+    	<div class="modify-mode" hidden>
+    		<h5>Modify mode</h5>
+    		<p><small><b>[m]</b> - exit Modify mode</small></p>
+    		<hr>
+    		<div class="selection-submode">
+    			<p><b>[click]</b> on <span style="background-color: #ff7c7c">nodes/links</span> to select</p>
+    			<p>hold <b>[ctrl]</b> to add notes and links</p>
+    		</div>
+    		<div class="add-submode" hidden>
+    			<p><b>[click]</b> on <span style="background-color: #e2ffe7">area</span> to add node</p>
+    			<p><b>[click]</b> on <span style="background-color: #fff72b">node</span> to start adding link</p>
+    		</div>
+    		<div class="draw-submode" hidden>
+    			<p><b>[click]</b> on <span style="background-color: #fff72b">node</span> to finish adding link</p>
+    		</div>
+    	</div>
+    	<div class="selection-exist" hidden>
+    		<hr>
+    		<p><b>[delete]</b> - delete selected <span style="background-color: #ff0000">nodes/links</span></p>
+    	</div>
+    </div>
+    <div class="col-10">
+	  <svg width="960" height="600"></svg>
+    </div>
+  </div>
+</div>
 </body>
 </html>
