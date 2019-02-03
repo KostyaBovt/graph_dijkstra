@@ -205,7 +205,7 @@ class Graph {
 		this.modifyMode = false;
 		this.addMode = false;
 		this.drawLineMode = false;
-		this.keyCodesAllowed = [17, 77, 46];
+		this.keyCodesAllowed = [17, 77, 46, 68];
 
 		d3.select(window)
 			.on('keydown', () => {this.keydown()})
@@ -265,6 +265,9 @@ class Graph {
 				break;
 			case 46: // [delete]
 				this.deleteSelected();
+				break;
+			case 68: // [d] button
+				this.dumpGraph();
 				break;
 		}	
 	}
@@ -708,6 +711,13 @@ class Graph {
 			.attr("y1", -1)
 			.attr("x2", -1)
 			.attr("y2", -1);		
+	}
+
+	// ================== Helpers ==================
+
+	dumpGraph() {
+		var json = JSON.stringify(this.rawInput);
+		console.log(json);
 	}
 
 }

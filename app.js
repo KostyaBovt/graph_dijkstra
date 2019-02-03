@@ -1,5 +1,5 @@
 const MAX_PATHS = 10;
-const INPUT_FILE = "input.json";
+const INPUT_FILE = "input_2.json";
 
 window.onload = function() {	
 	var fileInput = document.getElementById('fileinput');
