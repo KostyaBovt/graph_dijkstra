@@ -9,8 +9,8 @@ This project was made using d3.js.
 
 1. `git clone https://github.com/KostyaBovt/graph_dijkstra folder`
 2. `cd folder`
-3. `npm install http-server -g` (if needed)
-4. `http-server`
+3. `npm install`
+4. `npm run start`
 5. open http://localhost:8080/ in browser
 
 

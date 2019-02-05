@@ -1,0 +1,23 @@
+{
+  "name": "test_graph",
+  "version": "1.0.0",
+  "description": "This is web application for finding best paths in graph between two nodes using Dijkstra algorithm. This project was made using d3.js.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node_modules/.bin/http-server",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KostyaBovt/graph_dijkstra.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KostyaBovt/graph_dijkstra/issues"
+  },
+  "homepage": "https://github.com/KostyaBovt/graph_dijkstra#readme",
+  "dependencies": {
+    "http-server": "^0.11.1"
+  }
+}
